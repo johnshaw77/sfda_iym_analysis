@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>統計分析方法說明</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .method-card {
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+        .method-card:hover {
+            transform: translateY(-5px);
+        }
+        .list-group-item {
+            border-left: none;
+            border-right: none;
+        }
+        .list-group-item:first-child {
+            border-top: none;
+        }
+        .list-group-item:last-child {
+            border-bottom: none;
+        }
+        .badge-custom {
+            font-size: 0.9em;
+            padding: 0.5em 1em;
+            margin: 0.2em;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 1rem;
+            border-radius: 0.5rem;
+        }
+        .nav-pills .nav-link {
+            color: #495057;
+        }
+        .nav-pills .nav-link.active {
+            background-color: #0d6efd;
+            color: white;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-chart-bar me-2"></i>統計分析方法說明
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav">
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html">
+                            <i class="fas fa-home me-1"></i>首頁
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container my-5">
+        <div class="row">
+            <!-- 左側導航欄 -->
+            <div class="col-md-3 mb-4">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <i class="fas fa-list me-2"></i>分析方法列表
+                    </div>
+                    <div class="card-body p-0">
+                        <nav class="nav nav-pills flex-column" id="methodNav">
+                            <!-- 由 JavaScript 動態生成 -->
+                        </nav>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右側內容區 -->
+            <div class="col-md-9">
+                <div id="methodContent">
+                    <!-- 由 JavaScript 動態生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 獲取統計方法資訊
+        async function fetchMethods() {
+            try {
+                const response = await fetch('/api/v1/methods');
+                const methods = await response.json();
+                renderMethodNav(methods);
+                renderMethodContent(methods);
+            } catch (error) {
+                console.error('Error fetching methods:', error);
+            }
+        }
+
+        // 渲染導航欄
+        function renderMethodNav(methods) {
+            const nav = document.getElementById('methodNav');
+            methods.forEach((method, index) => {
+                const link = document.createElement('a');
+                link.className = `nav-link ${index === 0 ? 'active' : ''}`;
+                link.href = `#${method.method_id}`;
+                link.setAttribute('data-method-id', method.method_id);
+                link.innerHTML = `<i class="fas fa-chart-line me-2"></i>${method.name}`;
+                link.onclick = (e) => {
+                    e.preventDefault();
+                    document.querySelectorAll('#methodNav .nav-link').forEach(el => el.classList.remove('active'));
+                    link.classList.add('active');
+                    showMethod(method.method_id);
+                };
+                nav.appendChild(link);
+            });
+        }
+
+        // 渲染方法內容
+        function renderMethodContent(methods) {
+            const content = document.getElementById('methodContent');
+            methods.forEach((method, index) => {
+                const card = document.createElement('div');
+                card.className = `method-card card ${index === 0 ? '' : 'd-none'}`;
+                card.id = method.method_id;
+                
+                card.innerHTML = `
+                    <div class="card-header bg-primary text-white">
+                        <h3 class="mb-0">
+                            <i class="fas fa-chart-line me-2"></i>${method.name}
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-4">
+                            <h5><i class="fas fa-info-circle me-2"></i>描述</h5>
+                            <p>${method.description}</p>
+                        </div>
+
+                        <div class="mb-4">
+                            <h5><i class="fas fa-lightbulb me-2"></i>使用情境</h5>
+                            <ul class="list-group">
+                                ${method.use_cases.map(useCase => `
+                                    <li class="list-group-item">
+                                        <i class="fas fa-check text-success me-2"></i>${useCase}
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+
+                        <div class="mb-4">
+                            <h5><i class="fas fa-database me-2"></i>所需數據</h5>
+                            <ul class="list-group">
+                                ${Object.entries(method.required_data).map(([key, value]) => `
+                                    <li class="list-group-item">
+                                        <strong>${key}:</strong> ${value}
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+
+                        <div class="mb-4">
+                            <h5><i class="fas fa-exclamation-triangle me-2"></i>統計假設</h5>
+                            <ul class="list-group">
+                                ${method.assumptions.map(assumption => `
+                                    <li class="list-group-item">
+                                        <i class="fas fa-check text-warning me-2"></i>${assumption}
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+
+                        <div class="mb-4">
+                            <h5><i class="fas fa-chart-pie me-2"></i>輸出指標</h5>
+                            <div>
+                                ${method.output_metrics.map(metric => `
+                                    <span class="badge bg-primary badge-custom">
+                                        <i class="fas fa-chart-bar me-1"></i>${metric}
+                                    </span>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <h5><i class="fas fa-image me-2"></i>視覺化圖表</h5>
+                            <div>
+                                ${method.visualization.map(vis => `
+                                    <span class="badge bg-success badge-custom">
+                                        <i class="fas fa-chart-line me-1"></i>${vis}
+                                    </span>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div>
+                            <h5><i class="fas fa-code me-2"></i>範例數據</h5>
+                            <pre><code>${JSON.stringify(method.example, null, 2)}</code></pre>
+                        </div>
+                    </div>
+                `;
+                content.appendChild(card);
+            });
+        }
+
+        // 顯示指定方法的內容
+        function showMethod(methodId) {
+            document.querySelectorAll('.method-card').forEach(card => {
+                card.classList.add('d-none');
+            });
+            const targetCard = document.getElementById(methodId);
+            if (targetCard) {
+                targetCard.classList.remove('d-none');
+            }
+        }
+
+        // 頁面載入時獲取數據
+        document.addEventListener('DOMContentLoaded', fetchMethods);
+    </script>
+</body>
+</html> 

@@ -1,0 +1,2215 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>統計分析 API 測試</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <style>
+        html, body {
+            height: 100%;
+            overflow-y: auto;
+        }
+        .remove-feature {
+            font-size: 1.5rem;
+            line-height: 1;
+            padding: 0.25rem 0.75rem;
+            font-weight: bold;
+        }
+        .result-image {
+            max-width: 100%;
+            height: auto;
+            margin-top: 20px;
+        }
+        .error-message {
+            color: red;
+            margin-top: 10px;
+        }
+        .success-message {
+            color: green;
+            margin-top: 10px;
+        }
+        .wrapper {
+            display: flex;
+            width: 100%;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        #sidebar {
+            min-width: 250px;
+            max-width: 250px;
+            min-height: 100vh;
+            max-height: 100vh;
+            background: #f8f9fa;
+            position: fixed;
+            transition: all 0.3s;
+            overflow-y: auto;
+        }
+        #sidebar.active {
+            margin-left: -250px;
+        }
+        #content {
+            width: calc(100% - 250px);
+            margin-left: 250px;
+            transition: all 0.3s;
+        }
+        #content.active {
+            width: 100%;
+            margin-left: 0;
+        }
+        .nav-link {
+            color: #333;
+            padding: 10px 15px;
+        }
+        .nav-link:hover {
+            background: #e9ecef;
+        }
+        .nav-link.active {
+            background: #0d6efd;
+            color: white;
+        }
+        .section {
+            display: none;
+            padding: 20px;
+        }
+        .section.active {
+            display: block;
+        }
+        .result-tabs {
+            margin-top: 20px;
+        }
+        .sample-data-btn {
+            margin-bottom: 10px;
+        }
+        @media (max-width: 768px) {
+            #sidebar {
+                margin-left: -250px;
+            }
+            #sidebar.active {
+                margin-left: 0;
+            }
+            #content {
+                width: 100%;
+                margin-left: 0;
+            }
+            #content.active {
+                margin-left: 250px;
+            }
+        }
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .loading.show {
+            display: flex;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading 指示器 -->
+    <div class="loading">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">載入中...</span>
+        </div>
+    </div>
+
+    <div class="wrapper">
+        <!-- 側邊導航欄 -->
+        <nav id="sidebar">
+            <div class="p-4">
+                <h3>統計分析</h3>
+                <a  href="/static/stat_method.html" target="_blank">
+                    <i class="fas fa-book"></i> 統計方法說明
+                </a>
+                <hr>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <h6 class="text-muted mt-3">基礎統計</h6>
+                        <a class="nav-link active" href="#descriptive">描述性統計</a>
+                    </li>
+                    <li class="nav-item">
+                        <h6 class="text-muted mt-3">假設檢定</h6>
+                        <a class="nav-link" href="#ttest">T 檢定</a>
+                        <a class="nav-link" href="#pairedTTest">配對樣本 t 檢定</a>
+                        <a class="nav-link" href="#anova">ANOVA 分析</a>
+                        <a class="nav-link" href="#chiSquare">卡方檢定</a>
+                    </li>
+                    <li class="nav-item">
+                        <h6 class="text-muted mt-3">相關與回歸</h6>
+                        <a class="nav-link" href="#correlation">相關性分析</a>
+                        <a class="nav-link" href="#regression">線性回歸</a>
+                        <a class="nav-link" href="#multipleRegression">多元迴歸</a>
+                        <a class="nav-link" href="#logisticRegression">邏輯迴歸</a>
+                    </li>
+                    <li class="nav-item">
+                        <h6 class="text-muted mt-3">進階分析</h6>
+                        <a class="nav-link" href="#survival">存活分析</a>
+                        <a class="nav-link" href="#pca">主成分分析</a>
+                        <a class="nav-link" href="#factor">因子分析</a>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+
+        <!-- 主要內容區 -->
+        <div id="content">
+            <!-- <a class="nav-link" href="/static/stat_method.html" target="_blank">
+                <i class="fas fa-book"></i> 統計方法說明
+            </a> -->
+            <!-- <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+                <div class="container">
+                    <a class="navbar-brand" href="#">統計分析 API</a>
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <div class="collapse navbar-collapse" id="navbarNav">
+                        <ul class="navbar-nav">
+                            <li class="nav-item">
+                                <a class="nav-link active" href="index.html">
+                                    <i class="fas fa-home"></i> 首頁
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/static/stat_method.html" target="_blank">
+                                    <i class="fas fa-book"></i> 統計方法說明
+                                </a>
+                            </li>
+                        </ul>
+                </div>
+                </div>
+            </nav> -->
+
+            <div class="container-fluid">
+                <!-- 各分析方法的表單和結果區域 -->
+                <!-- 這裡保留原有的表單內容，但每個表單都加上 section 類別和對應的 id -->
+                <!-- 例如：描述性統計的部分 -->
+                <div id="descriptive" class="section active">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">描述性統計分析</h5>
+                            <button type="button" class="btn btn-outline-primary sample-data-btn">
+                                載入範例數據
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <form id="descriptiveForm">
+                                <div class="mb-3">
+                                    <label for="descriptiveData" class="form-label">數據 (用逗號分隔)</label>
+                                    <input type="text" class="form-control" id="descriptiveData" 
+                                           value="10.2, 15.3, 20.1, 25.4, 30.2, 18.7, 22.3, 19.8, 24.1, 27.5">
+                                    <div class="form-text">請輸入數值，並用逗號分隔</div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">執行分析</button>
+                            </form>
+                            <div id="descriptiveResult" class="mt-3">
+                                <div id="descriptiveError" class="error-message"></div>
+                                <div id="descriptiveSuccess" class="success-message"></div>
+                                
+                                <!-- 使用標籤頁顯示結果 -->
+                                <ul class="nav nav-tabs result-tabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" data-bs-toggle="tab" 
+                                                data-bs-target="#descriptiveDataTab" type="button" role="tab">
+                                            數據結果
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" data-bs-toggle="tab" 
+                                                data-bs-target="#descriptivePlotsTab" type="button" role="tab">
+                                            圖表
+                                        </button>
+                                    </li>
+                                </ul>
+                                
+                                <div class="tab-content">
+                                    <div class="tab-pane fade show active" id="descriptiveDataTab" role="tabpanel">
+                                        <pre id="descriptiveData" class="mt-3"></pre>
+                                    </div>
+                                    <div class="tab-pane fade" id="descriptivePlotsTab" role="tabpanel">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <img id="descriptiveDistPlot" class="result-image">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <img id="descriptiveBoxPlot" class="result-image">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <img id="descriptiveQQPlot" class="result-image">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- T 檢定 -->
+                <div id="ttest" class="section">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">T 檢定分析</h5>
+                            <button type="button" class="btn btn-outline-primary sample-data-btn">
+                                載入範例數據
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <form id="ttestForm">
+                                <div class="mb-3">
+                                    <label for="group1" class="form-label">第一組數據 (用逗號分隔)</label>
+                                    <input type="text" class="form-control" id="group1" 
+                                           value="1.2, 2.3, 3.1">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="group2" class="form-label">第二組數據 (用逗號分隔)</label>
+                                    <input type="text" class="form-control" id="group2" 
+                                           value="1.8, 2.5, 3.0">
+                                </div>
+                                <button type="submit" class="btn btn-primary">執行分析</button>
+                            </form>
+                            <div id="ttestResult" class="mt-3">
+                                <div id="ttestError" class="error-message"></div>
+                                <div id="ttestSuccess" class="success-message"></div>
+                                
+                                <ul class="nav nav-tabs result-tabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" data-bs-toggle="tab" 
+                                                data-bs-target="#ttestDataTab" type="button" role="tab">
+                                            數據結果
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" data-bs-toggle="tab" 
+                                                data-bs-target="#ttestPlotsTab" type="button" role="tab">
+                                            圖表
+                                        </button>
+                                    </li>
+                                </ul>
+                                
+                                <div class="tab-content">
+                                    <div class="tab-pane fade show active" id="ttestDataTab" role="tabpanel">
+                                        <pre id="ttestData" class="mt-3"></pre>
+                                    </div>
+                                    <div class="tab-pane fade" id="ttestPlotsTab" role="tabpanel">
+                                        <div class="row">
+                                            <div class="col-md-12">
+                                                <img id="ttestBoxPlot" class="result-image">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ANOVA 分析 -->
+                <div id="anova" class="section">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">ANOVA 分析</h5>
+                            <button type="button" class="btn btn-outline-primary sample-data-btn">
+                                載入範例數據
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <form id="anovaForm">
+                                <div id="anovaGroups">
+                                    <div class="mb-3">
+                                        <label class="form-label">組別 1 數據 (用逗號分隔)</label>
+                                        <input type="text" class="form-control" name="group[]" 
+                                               value="1.2, 2.3, 3.1">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">組別 2 數據 (用逗號分隔)</label>
+                                        <input type="text" class="form-control" name="group[]" 
+                                               value="1.8, 2.5, 3.0">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">組別 3 數據 (用逗號分隔)</label>
+                                        <input type="text" class="form-control" name="group[]" 
+                                               value="2.1, 2.8, 3.3">
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-outline-secondary mb-3" id="addAnovaGroup">
+                                    新增組別
+                                </button>
+                                <button type="submit" class="btn btn-primary">執行分析</button>
+                            </form>
+                            <div id="anovaResult" class="mt-3">
+                                <div id="anovaError" class="error-message"></div>
+                                <div id="anovaSuccess" class="success-message"></div>
+                                
+                                <ul class="nav nav-tabs result-tabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" data-bs-toggle="tab" 
+                                                data-bs-target="#anovaDataTab" type="button" role="tab">
+                                            數據結果
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" data-bs-toggle="tab" 
+                                                data-bs-target="#anovaPlotsTab" type="button" role="tab">
+                                            圖表
+                                        </button>
+                                    </li>
+                                </ul>
+                                
+                                <div class="tab-content">
+                                    <div class="tab-pane fade show active" id="anovaDataTab" role="tabpanel">
+                                        <pre id="anovaData" class="mt-3"></pre>
+                                    </div>
+                                    <div class="tab-pane fade" id="anovaPlotsTab" role="tabpanel">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <img id="anovaBoxPlot" class="result-image">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <img id="anovaViolinPlot" class="result-image">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 存活分析 -->
+                <div id="survival" class="section">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">存活分析</h5>
+                            <button type="button" class="btn btn-outline-primary sample-data-btn">
+                                載入範例數據
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <form id="survivalForm">
+                                <div class="mb-3">
+                                    <label for="durations" class="form-label">時間數據 (用逗號分隔)</label>
+                                    <input type="text" class="form-control" id="durations" 
+                                           value="10.2, 15.3, 20.1, 25.4, 30.2">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="events" class="form-label">事件指標 (0 或 1，用逗號分隔)</label>
+                                    <input type="text" class="form-control" id="events" 
+                                           value="1, 1, 0, 1, 0">
+                                    <div class="form-text">1 表示事件發生，0 表示審查</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="groups" class="form-label">分組指標 (用逗號分隔，可選)</label>
+                                    <input type="text" class="form-control" id="groups" 
+                                           value="1, 1, 2, 2, 2">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="groupNames" class="form-label">組別名稱 (用逗號分隔，可選)</label>
+                                    <input type="text" class="form-control" id="groupNames" 
+                                           value="治療組, 對照組">
+                                </div>
+                                <button type="submit" class="btn btn-primary">執行分析</button>
+                            </form>
+                            <div id="survivalResult" class="mt-3">
+                                <div id="survivalError" class="error-message"></div>
+                                <div id="survivalSuccess" class="success-message"></div>
+                                
+                                <ul class="nav nav-tabs result-tabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" data-bs-toggle="tab" 
+                                                data-bs-target="#survivalDataTab" type="button" role="tab">
+                                            數據結果
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" data-bs-toggle="tab" 
+                                                data-bs-target="#survivalPlotsTab" type="button" role="tab">
+                                            圖表
+                                        </button>
+                                    </li>
+                                </ul>
+                                
+                                <div class="tab-content">
+                                    <div class="tab-pane fade show active" id="survivalDataTab" role="tabpanel">
+                                        <pre id="survivalData" class="mt-3"></pre>
+                                    </div>
+                                    <div class="tab-pane fade" id="survivalPlotsTab" role="tabpanel">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <img id="survivalPlot" class="result-image">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <img id="cumulativePlot" class="result-image">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 配對樣本 t 檢定 -->
+                <div id="pairedTTest" class="section">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">配對樣本 t 檢定</h5>
+                            <button type="button" class="btn btn-outline-primary sample-data-btn">
+                                載入範例數據
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <form id="pairedTTestForm">
+                                <div class="mb-3">
+                                    <label for="preTest" class="form-label">前測數據 (用逗號分隔)</label>
+                                    <input type="text" class="form-control" id="preTest" 
+                                           value="1.2, 2.3, 3.1">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="postTest" class="form-label">後測數據 (用逗號分隔)</label>
+                                    <input type="text" class="form-control" id="postTest" 
+                                           value="1.8, 2.5, 3.0">
+                                </div>
+                                <button type="submit" class="btn btn-primary">執行分析</button>
+                            </form>
+                            <div id="pairedTTestResult" class="mt-3">
+                                <div id="pairedTTestError" class="error-message"></div>
+                                <div id="pairedTTestSuccess" class="success-message"></div>
+                                
+                                <ul class="nav nav-tabs result-tabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" data-bs-toggle="tab" 
+                                                data-bs-target="#pairedTTestDataTab" type="button" role="tab">
+                                            數據結果
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" data-bs-toggle="tab" 
+                                                data-bs-target="#pairedTTestPlotsTab" type="button" role="tab">
+                                            圖表
+                                        </button>
+                                    </li>
+                                </ul>
+                                
+                                <div class="tab-content">
+                                    <div class="tab-pane fade show active" id="pairedTTestDataTab" role="tabpanel">
+                                        <pre id="pairedTTestData" class="mt-3"></pre>
+                                    </div>
+                                    <div class="tab-pane fade" id="pairedTTestPlotsTab" role="tabpanel">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <img id="pairedTTestBoxPlot" class="result-image">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <img id="pairedTTestDiffPlot" class="result-image">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 卡方檢定 -->
+                <div id="chiSquare" class="section">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">卡方檢定</h5>
+                            <button type="button" class="btn btn-outline-primary sample-data-btn">
+                                載入範例數據
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <form id="chiSquareForm">
+                                <div class="mb-3">
+                                    <label for="observed" class="form-label">觀察值 (用逗號分隔)</label>
+                                    <input type="text" class="form-control" id="observed" 
+                                           value="15, 25, 35">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="expected" class="form-label">期望值 (用逗號分隔)</label>
+                                    <input type="text" class="form-control" id="expected" 
+                                           value="20, 25, 30">
+                                </div>
+                                <button type="submit" class="btn btn-primary">執行分析</button>
+                            </form>
+                            <div id="chiSquareResult" class="mt-3">
+                                <div id="chiSquareError" class="error-message"></div>
+                                <div id="chiSquareSuccess" class="success-message"></div>
+                                
+                                <ul class="nav nav-tabs result-tabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" data-bs-toggle="tab" 
+                                                data-bs-target="#chiSquareDataTab" type="button" role="tab">
+                                            數據結果
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" data-bs-toggle="tab" 
+                                                data-bs-target="#chiSquarePlotsTab" type="button" role="tab">
+                                            圖表
+                                        </button>
+                                    </li>
+                                </ul>
+                                
+                                <div class="tab-content">
+                                    <div class="tab-pane fade show active" id="chiSquareDataTab" role="tabpanel">
+                                        <pre id="chiSquareData" class="mt-3"></pre>
+                                    </div>
+                                    <div class="tab-pane fade" id="chiSquarePlotsTab" role="tabpanel">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <img id="chiSquarePlot" class="result-image">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <img id="chiSquareContribPlot" class="result-image">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 相關性分析 -->
+                <div id="correlation" class="section">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">相關性分析</h5>
+                            <button type="button" class="btn btn-outline-primary sample-data-btn">
+                                載入範例數據
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <form id="correlationForm">
+                                <div class="mb-3">
+                                    <label for="correlationX" class="form-label">X 變量數據 (用逗號分隔)</label>
+                                    <input type="text" class="form-control" id="correlationX" 
+                                           value="1, 2, 3, 4, 5">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="correlationY" class="form-label">Y 變量數據 (用逗號分隔)</label>
+                                    <input type="text" class="form-control" id="correlationY" 
+                                           value="2, 4, 6, 8, 10">
+                                </div>
+                                <button type="submit" class="btn btn-primary">執行分析</button>
+                            </form>
+                            <div id="correlationResult" class="mt-3">
+                                <div id="correlationError" class="error-message"></div>
+                                <div id="correlationSuccess" class="success-message"></div>
+                                
+                                <ul class="nav nav-tabs result-tabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" data-bs-toggle="tab" 
+                                                data-bs-target="#correlationDataTab" type="button" role="tab">
+                                            數據結果
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" data-bs-toggle="tab" 
+                                                data-bs-target="#correlationPlotsTab" type="button" role="tab">
+                                            圖表
+                                        </button>
+                                    </li>
+                                </ul>
+                                
+                                <div class="tab-content">
+                                    <div class="tab-pane fade show active" id="correlationDataTab" role="tabpanel">
+                                        <pre id="correlationData" class="mt-3"></pre>
+                                    </div>
+                                    <div class="tab-pane fade" id="correlationPlotsTab" role="tabpanel">
+                                        <div class="row">
+                                            <div class="col-md-12">
+                                                <img id="correlationPlot" class="result-image">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 線性回歸 -->
+                <div id="regression" class="section">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">線性回歸</h5>
+                            <button type="button" class="btn btn-outline-primary sample-data-btn">
+                                載入範例數據
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <form id="regressionForm">
+                                <div class="mb-3">
+                                    <label for="regressionX" class="form-label">X 變量數據 (用逗號分隔)</label>
+                                    <input type="text" class="form-control" id="regressionX" 
+                                           value="1, 2, 3, 4, 5">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="regressionY" class="form-label">Y 變量數據 (用逗號分隔)</label>
+                                    <input type="text" class="form-control" id="regressionY" 
+                                           value="2, 4, 6, 8, 10">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="predictX" class="form-label">預測的 X 值 (可選)</label>
+                                    <input type="text" class="form-control" id="predictX" 
+                                           value="6">
+                                </div>
+                                <button type="submit" class="btn btn-primary">執行分析</button>
+                            </form>
+                            <div id="regressionResult" class="mt-3">
+                                <div id="regressionError" class="error-message"></div>
+                                <div id="regressionSuccess" class="success-message"></div>
+                                
+                                <ul class="nav nav-tabs result-tabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" data-bs-toggle="tab" 
+                                                data-bs-target="#regressionDataTab" type="button" role="tab">
+                                            數據結果
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" data-bs-toggle="tab" 
+                                                data-bs-target="#regressionPlotsTab" type="button" role="tab">
+                                            圖表
+                                        </button>
+                                    </li>
+                                </ul>
+                                
+                                <div class="tab-content">
+                                    <div class="tab-pane fade show active" id="regressionDataTab" role="tabpanel">
+                                        <pre id="regressionData" class="mt-3"></pre>
+                                    </div>
+                                    <div class="tab-pane fade" id="regressionPlotsTab" role="tabpanel">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <img id="regressionPlot" class="result-image">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <img id="residualPlot" class="result-image">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 多元迴歸分析 -->
+                <div id="multipleRegression" class="section">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">多元迴歸分析</h5>
+                            <button type="button" class="btn btn-outline-primary sample-data-btn">
+                                載入範例數據
+                            </button>
+            </div>
+                        <div class="card-body">
+                            <form id="multipleRegressionForm">
+                                <div class="mb-3">
+                                    <label class="form-label">自變量數據</label>
+                                    <div id="featuresContainer">
+                                        <div class="feature-group mb-2">
+                                            <div class="input-group">
+                                                <input type="text" class="form-control feature-name" 
+                                                       placeholder="特徵名稱">
+                                                <input type="text" class="form-control feature-data" 
+                                                       placeholder="數據 (用逗號分隔)">
+                                                <button type="button" class="btn btn-outline-danger remove-feature">
+                                                    ×
+                                                </button>
+        </div>
+    </div>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-secondary mt-2" id="addFeature">
+                                        <i class="bi bi-plus"></i> 添加特徵
+                                    </button>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="multipleRegressionY" class="form-label">因變量數據 (用逗號分隔)</label>
+                                    <input type="text" class="form-control" id="multipleRegressionY">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="multipleRegressionPredictX" class="form-label">預測值 (用逗號分隔)</label>
+                                    <input type="text" class="form-control" id="multipleRegressionPredictX">
+                                    <div class="form-text">請輸入與特徵數量相同的數值，用逗號分隔</div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">執行分析</button>
+                            </form>
+                            <div id="multipleRegressionResult" class="mt-3">
+                                <div id="multipleRegressionError" class="error-message"></div>
+                                <div id="multipleRegressionSuccess" class="success-message"></div>
+                                
+                                <ul class="nav nav-tabs result-tabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" data-bs-toggle="tab" 
+                                                data-bs-target="#multipleRegressionDataTab" type="button" role="tab">
+                                            數據結果
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" data-bs-toggle="tab" 
+                                                data-bs-target="#multipleRegressionPlotsTab" type="button" role="tab">
+                                            圖表
+                                        </button>
+                                    </li>
+                                </ul>
+                                
+                                <div class="tab-content">
+                                    <div class="tab-pane fade show active" id="multipleRegressionDataTab" role="tabpanel">
+                                        <pre id="multipleRegressionData" class="mt-3"></pre>
+                                    </div>
+                                    <div class="tab-pane fade" id="multipleRegressionPlotsTab" role="tabpanel">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <img id="multipleRegressionResidualPlot" class="result-image">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <img id="multipleRegressionPredictionPlot" class="result-image">
+                                            </div>
+                                            <div class="col-md-12">
+                                                <img id="multipleRegressionCoefficientPlot" class="result-image">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 邏輯迴歸分析 -->
+                <div id="logisticRegression" class="section">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">邏輯迴歸分析</h5>
+                            <button type="button" class="btn btn-outline-primary sample-data-btn">
+                                載入範例數據
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <form id="logisticRegressionForm">
+                                <div class="mb-3">
+                                    <label class="form-label">自變量數據</label>
+                                    <div id="logisticFeaturesContainer">
+                                        <div class="feature-group mb-2">
+                                            <div class="input-group">
+                                                <input type="text" class="form-control feature-name" 
+                                                       placeholder="特徵名稱">
+                                                <input type="text" class="form-control feature-data" 
+                                                       placeholder="數據 (用逗號分隔)">
+                                                <button type="button" class="btn btn-outline-danger remove-feature">
+                                                    ×
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-secondary mt-2" id="addLogisticFeature">
+                                        <i class="bi bi-plus"></i> 添加特徵
+                                    </button>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="logisticRegressionY" class="form-label">因變量數據 (0 或 1，用逗號分隔)</label>
+                                    <input type="text" class="form-control" id="logisticRegressionY">
+                                    <div class="form-text">請輸入二元數據，0 表示負類別，1 表示正類別</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="logisticRegressionPredictX" class="form-label">預測值 (用逗號分隔)</label>
+                                    <input type="text" class="form-control" id="logisticRegressionPredictX">
+                                    <div class="form-text">請輸入與特徵數量相同的數值，用逗號分隔</div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">執行分析</button>
+                            </form>
+                            <div id="logisticRegressionResult" class="mt-3">
+                                <div id="logisticRegressionError" class="error-message"></div>
+                                <div id="logisticRegressionSuccess" class="success-message"></div>
+                                
+                                <ul class="nav nav-tabs result-tabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" data-bs-toggle="tab" 
+                                                data-bs-target="#logisticRegressionDataTab" type="button" role="tab">
+                                            數據結果
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" data-bs-toggle="tab" 
+                                                data-bs-target="#logisticRegressionPlotsTab" type="button" role="tab">
+                                            圖表
+                                        </button>
+                                    </li>
+                                </ul>
+                                
+                                <div class="tab-content">
+                                    <div class="tab-pane fade show active" id="logisticRegressionDataTab" role="tabpanel">
+                                        <pre id="logisticRegressionData" class="mt-3"></pre>
+                                    </div>
+                                    <div class="tab-pane fade" id="logisticRegressionPlotsTab" role="tabpanel">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <img id="logisticRegressionROCPlot" class="result-image">
+                                            </div>
+                                            <div class="col-md-6">
+                                                <img id="logisticRegressionProbabilityPlot" class="result-image">
+                                            </div>
+                                            <div class="col-md-12">
+                                                <img id="logisticRegressionCoefficientPlot" class="result-image">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 主成分分析 -->
+                <div id="pca" class="section">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">主成分分析</h5>
+                            <button type="button" class="btn btn-outline-primary sample-data-btn">
+                                載入範例數據
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <form id="pcaForm">
+                                <div class="mb-3">
+                                    <label class="form-label">特徵數據</label>
+                                    <div id="pcaFeaturesContainer">
+                                        <div class="feature-group mb-2">
+                                            <div class="input-group">
+                                                <input type="text" class="form-control feature-name" 
+                                                       placeholder="特徵名稱">
+                                                <input type="text" class="form-control feature-data" 
+                                                       placeholder="數據 (用逗號分隔)">
+                                                <button type="button" class="btn btn-outline-danger remove-feature">
+                                                    ×
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-secondary mt-2" id="addPCAFeature">
+                                        <i class="bi bi-plus"></i> 添加特徵
+                                    </button>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="pcaComponents" class="form-label">主成分數量</label>
+                                    <input type="number" class="form-control" id="pcaComponents" min="1">
+                                    <div class="form-text">可選，留空表示保留所有主成分</div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">執行分析</button>
+                            </form>
+                            <div id="pcaResult" class="mt-3">
+                                <div id="pcaError" class="error-message"></div>
+                                <div id="pcaSuccess" class="success-message"></div>
+                                
+                                <ul class="nav nav-tabs result-tabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" data-bs-toggle="tab" 
+                                                data-bs-target="#pcaDataTab" type="button" role="tab">
+                                            數據結果
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" data-bs-toggle="tab" 
+                                                data-bs-target="#pcaPlotsTab" type="button" role="tab">
+                                            圖表
+                                        </button>
+                                    </li>
+                                </ul>
+                                
+                                <div class="tab-content">
+                                    <div class="tab-pane fade show active" id="pcaDataTab" role="tabpanel">
+                                        <pre id="pcaData" class="mt-3"></pre>
+                                    </div>
+                                    <div class="tab-pane fade" id="pcaPlotsTab" role="tabpanel">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <img id="pcaScreePlot" class="result-image">
+                                                <p class="text-center">碎石圖</p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <img id="pcaCumulativePlot" class="result-image">
+                                                <p class="text-center">累積變異圖</p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <img id="pcaScatterPlot" class="result-image">
+                                                <p class="text-center">主成分散點圖</p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <img id="pcaLoadingPlot" class="result-image">
+                                                <p class="text-center">特徵載荷圖</p>
+                                            </div>
+                                            <div class="col-md-12">
+                                                <img id="pcaHeatmapPlot" class="result-image">
+                                                <p class="text-center">特徵載荷熱圖</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 因子分析 -->
+                <div id="factor" class="section">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">因子分析</h5>
+                            <button type="button" class="btn btn-outline-primary sample-data-btn">
+                                載入範例數據
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <form id="factorForm">
+                                <div class="mb-3">
+                                    <label class="form-label">特徵數據</label>
+                                    <div id="factorFeaturesContainer">
+                                        <div class="feature-group mb-2">
+                                            <div class="input-group">
+                                                <input type="text" class="form-control feature-name" 
+                                                       placeholder="特徵名稱">
+                                                <input type="text" class="form-control feature-data" 
+                                                       placeholder="數據 (用逗號分隔)">
+                                                <button type="button" class="btn btn-outline-danger remove-feature">
+                                                    ×
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button type="button" class="btn btn-outline-secondary mt-2" id="addFactorFeature">
+                                        <i class="bi bi-plus"></i> 添加特徵
+                                    </button>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="factorCount" class="form-label">因子數量</label>
+                                    <input type="number" class="form-control" id="factorCount" min="1">
+                                    <div class="form-text">可選，留空將自動決定最佳因子數量</div>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="rotationMethod" class="form-label">旋轉方法</label>
+                                    <select class="form-select" id="rotationMethod">
+                                        <option value="varimax">Varimax 旋轉</option>
+                                        <option value="promax">Promax 旋轉</option>
+                                        <option value="oblimin">Oblimin 旋轉</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-primary">執行分析</button>
+                            </form>
+                            <div id="factorResult" class="mt-3">
+                                <div id="factorError" class="error-message"></div>
+                                <div id="factorSuccess" class="success-message"></div>
+                                
+                                <ul class="nav nav-tabs result-tabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" data-bs-toggle="tab" 
+                                                data-bs-target="#factorDataTab" type="button" role="tab">
+                                            數據結果
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" data-bs-toggle="tab" 
+                                                data-bs-target="#factorPlotsTab" type="button" role="tab">
+                                            圖表
+                                        </button>
+                                    </li>
+                                </ul>
+                                
+                                <div class="tab-content">
+                                    <div class="tab-pane fade show active" id="factorDataTab" role="tabpanel">
+                                        <pre id="factorData" class="mt-3"></pre>
+                                    </div>
+                                    <div class="tab-pane fade" id="factorPlotsTab" role="tabpanel">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <img id="factorScreePlot" class="result-image">
+                                                <p class="text-center">碎石圖與平行分析</p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <img id="factorLoadingPlot" class="result-image">
+                                                <p class="text-center">因子載荷熱圖</p>
+                                            </div>
+                                            <div class="col-md-12">
+                                                <img id="factorLoadingScatter" class="result-image">
+                                                <p class="text-center">因子載荷散點圖</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+
+    <script src="static/js/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // 側邊欄切換
+            $('#sidebarCollapse').on('click', function() {
+                $('#sidebar, #content').toggleClass('active');
+            });
+
+            // 導航切換
+            $('.nav-link').on('click', function(e) {
+                e.preventDefault();
+                const $this = $(this);
+                
+                // 移除所有導航項目的活動狀態
+                $('.nav-link').removeClass('active');
+                $this.addClass('active');
+                
+                // 獲取目標區塊的 ID
+                const href = $this.attr('href');
+                if (href) {
+                    const target = href.substring(1);
+                    // 切換區塊顯示
+                    $('.section').removeClass('active');
+                    $(`#${target}`).addClass('active');
+                }
+            });
+
+            // 範例數據按鈕
+            $('.sample-data-btn').on('click', function() {
+                const section = $(this).closest('.section').attr('id');
+                loadSampleData(section);
+            });
+
+            // 載入範例數據函數
+            function loadSampleData(section) {
+                const sampleData = {
+                    descriptive: "10.2, 15.3, 20.1, 25.4, 30.2, 18.7, 22.3, 19.8, 24.1, 27.5",
+                    ttest: {
+                        group1: "1.2, 2.3, 3.1",
+                        group2: "1.8, 2.5, 3.0"
+                    },
+                    anova: [
+                        "1.2, 2.3, 3.1",
+                        "1.8, 2.5, 3.0",
+                        "2.1, 2.8, 3.3"
+                    ],
+                    survival: {
+                        durations: "10.2, 15.3, 20.1, 25.4, 30.2",
+                        events: "1, 1, 0, 1, 0",
+                        groups: "1, 1, 2, 2, 2",
+                        groupNames: "治療組, 對照組"
+                    },
+                    pairedTTest: {
+                        preTest: "1.2, 2.3, 3.1",
+                        postTest: "1.8, 2.5, 3.0"
+                    },
+                    chiSquare: {
+                        observed: "15, 25, 35",
+                        expected: "20, 25, 30"
+                    },
+                    correlation: {
+                        x: "1, 2, 3, 4, 5",
+                        y: "2, 4, 6, 8, 10"
+                    },
+                    regression: {
+                        x: "1, 2, 3, 4, 5",
+                        y: "2, 4, 6, 8, 10",
+                        predictX: "6"
+                    }
+                };
+
+                switch(section) {
+                    case 'descriptive':
+                        $('#descriptiveData').val(sampleData.descriptive);
+                        break;
+                    case 'ttest':
+                        $('#group1').val(sampleData.ttest.group1);
+                        $('#group2').val(sampleData.ttest.group2);
+                        break;
+                    case 'anova':
+                        $('#anovaGroups input[name="group[]"]').each(function(index) {
+                            $(this).val(sampleData.anova[index] || '');
+                        });
+                        break;
+                    case 'survival':
+                        $('#durations').val(sampleData.survival.durations);
+                        $('#events').val(sampleData.survival.events);
+                        $('#groups').val(sampleData.survival.groups);
+                        $('#groupNames').val(sampleData.survival.groupNames);
+                        break;
+                    case 'pairedTTest':
+                        $('#preTest').val(sampleData.pairedTTest.preTest);
+                        $('#postTest').val(sampleData.pairedTTest.postTest);
+                        break;
+                    case 'chiSquare':
+                        $('#observed').val(sampleData.chiSquare.observed);
+                        $('#expected').val(sampleData.chiSquare.expected);
+                        break;
+                    case 'correlation':
+                        $('#correlationX').val(sampleData.correlation.x);
+                        $('#correlationY').val(sampleData.correlation.y);
+                        break;
+                    case 'regression':
+                        $('#regressionX').val(sampleData.regression.x);
+                        $('#regressionY').val(sampleData.regression.y);
+                        $('#predictX').val(sampleData.regression.predictX);
+                        break;
+                }
+            }
+
+            // 顯示載入指示器
+            function showLoading() {
+                $('.loading').addClass('show');
+            }
+
+            // 隱藏載入指示器
+            function hideLoading() {
+                $('.loading').removeClass('show');
+            }
+
+            // 修改所有 AJAX 請求，添加載入指示器
+            $(document).ajaxStart(function() {
+                showLoading();
+            }).ajaxStop(function() {
+                hideLoading();
+            });
+
+            // 描述性統計分析表單提交
+            $('#descriptiveForm').on('submit', function(e) {
+                e.preventDefault();
+                const inputData = $('#descriptiveData').val().split(',').map(x => parseFloat(x.trim()));
+
+                $.ajax({
+                    url: '/api/v1/analyze/descriptive',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        method: 'descriptive',
+                        data: {
+                            data: inputData
+                        }
+                    }),
+                    success: function(response) {
+                        $('#descriptiveError').hide();
+                        $('#descriptiveSuccess').show().text('分析完成！');
+                        
+                        // 格式化數據結果
+                        const formattedResult = {
+                            "樣本大小": response.result.sample_size,
+                            "平均數": response.result.mean.toFixed(4),
+                            "中位數": response.result.median.toFixed(4),
+                            "眾數": {
+                                "值": response.result.mode.value.toFixed(4),
+                                "次數": response.result.mode.count
+                            },
+                            "標準差": response.result.std.toFixed(4),
+                            "變異數": response.result.variance.toFixed(4),
+                            "範圍": {
+                                "最小值": response.result.range.min.toFixed(4),
+                                "最大值": response.result.range.max.toFixed(4),
+                                "全距": response.result.range.range.toFixed(4)
+                            },
+                            "四分位數": {
+                                "Q1": response.result.quartiles.q1.toFixed(4),
+                                "Q3": response.result.quartiles.q3.toFixed(4),
+                                "四分位距": response.result.quartiles.iqr.toFixed(4)
+                            },
+                            "分布形狀": {
+                                "偏度": response.result.shape.skewness.toFixed(4),
+                                "峰度": response.result.shape.kurtosis.toFixed(4)
+                            },
+                            "結論": response.result.conclusion
+                        };
+                        
+                        // 在 pre 標籤中顯示格式化的結果
+                        $('#descriptiveDataTab pre').html(JSON.stringify(formattedResult, null, 2));
+                        
+                        // 更新圖表
+                        $('#descriptiveDistPlot').attr('src', 'data:image/png;base64,' + response.result.distribution_plot);
+                        $('#descriptiveBoxPlot').attr('src', 'data:image/png;base64,' + response.result.box_plot);
+                        $('#descriptiveQQPlot').attr('src', 'data:image/png;base64,' + response.result.qq_plot);
+                        
+                        // 顯示結果標籤頁
+                        $('.result-tabs').show();
+                    },
+                    error: function(xhr) {
+                        $('#descriptiveSuccess').hide();
+                        $('#descriptiveError').show().text('錯誤：' + xhr.responseJSON.detail);
+                        $('#descriptiveDataTab pre').html('');
+                        $('#descriptiveDistPlot').attr('src', '');
+                        $('#descriptiveBoxPlot').attr('src', '');
+                        $('#descriptiveQQPlot').attr('src', '');
+                        $('.result-tabs').hide();
+                    }
+                });
+            });
+            
+            // 初始隱藏結果標籤頁
+            $('.result-tabs').hide();
+
+            // T 檢定表單提交
+            $('#ttestForm').on('submit', function(e) {
+                e.preventDefault();
+                const group1Data = $('#group1').val().split(',').map(x => parseFloat(x.trim()));
+                const group2Data = $('#group2').val().split(',').map(x => parseFloat(x.trim()));
+
+                $.ajax({
+                    url: '/api/v1/analyze/t-test',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        method: 't_test',
+                        data: {
+                            group1: group1Data,
+                            group2: group2Data
+                        }
+                    }),
+                    success: function(response) {
+                        $('#ttestError').hide();
+                        $('#ttestSuccess').show().text('分析完成！');
+                        
+                        // 格式化數據結果
+                        const formattedResult = {
+                            "t 統計量": response.result.t_statistic.toFixed(4),
+                            "p 值": response.result.p_value.toFixed(4),
+                            "自由度": response.result.degrees_of_freedom,
+                            "置信區間": [
+                                response.result.confidence_interval[0].toFixed(4),
+                                response.result.confidence_interval[1].toFixed(4)
+                            ],
+                            "效果量": response.result.effect_size.toFixed(4),
+                            "結論": response.result.conclusion
+                        };
+                        
+                        $('#ttestDataTab pre').html(JSON.stringify(formattedResult, null, 2));
+                        $('#ttestBoxPlot').attr('src', 'data:image/png;base64,' + response.result.plot_base64);
+                        $('.result-tabs').show();
+                    },
+                    error: function(xhr) {
+                        $('#ttestSuccess').hide();
+                        $('#ttestError').show().text('錯誤：' + xhr.responseJSON.detail);
+                        $('#ttestDataTab pre').html('');
+                        $('#ttestBoxPlot').attr('src', '');
+                        $('.result-tabs').hide();
+                    }
+                });
+            });
+
+            // ANOVA 表單提交
+            $('#anovaForm').on('submit', function(e) {
+                e.preventDefault();
+                const groups = [];
+                const groupNames = [];
+                
+                $('input[name="group[]"]').each(function(index) {
+                    const groupData = $(this).val().split(',').map(x => parseFloat(x.trim()));
+                    groups.push(groupData);
+                    groupNames.push(`組別${index + 1}`);
+                });
+
+                $.ajax({
+                    url: '/api/v1/analyze/anova',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        method: 'anova',
+                        data: {
+                            groups: groups,
+                            group_names: groupNames
+                        }
+                    }),
+                    success: function(response) {
+                        $('#anovaError').hide();
+                        $('#anovaSuccess').show().text('分析完成！');
+                        
+                        // 格式化數據結果
+                        const formattedResult = {
+                            "F 統計量": response.result.f_statistic.toFixed(4),
+                            "p 值": response.result.p_value.toFixed(4),
+                            "效果量 (η²)": response.result.eta_squared.toFixed(4),
+                            "組別統計": response.result.group_statistics,
+                            "結論": response.result.conclusion
+                        };
+                        
+                        $('#anovaDataTab pre').html(JSON.stringify(formattedResult, null, 2));
+                        $('#anovaBoxPlot').attr('src', 'data:image/png;base64,' + response.result.box_plot);
+                        $('#anovaViolinPlot').attr('src', 'data:image/png;base64,' + response.result.violin_plot);
+                        $('.result-tabs').show();
+                    },
+                    error: function(xhr) {
+                        $('#anovaSuccess').hide();
+                        $('#anovaError').show().text('錯誤：' + xhr.responseJSON.detail);
+                        $('#anovaDataTab pre').html('');
+                        $('#anovaBoxPlot').attr('src', '');
+                        $('#anovaViolinPlot').attr('src', '');
+                        $('.result-tabs').hide();
+                    }
+                });
+            });
+
+            // 新增 ANOVA 組別按鈕
+            $('#addAnovaGroup').on('click', function() {
+                const groupCount = $('#anovaGroups .mb-3').length + 1;
+                const newGroup = `
+                    <div class="mb-3">
+                        <label class="form-label">組別 ${groupCount} 數據 (用逗號分隔)</label>
+                        <input type="text" class="form-control" name="group[]">
+                    </div>
+                `;
+                $('#anovaGroups').append(newGroup);
+            });
+
+            // 存活分析表單提交
+            $('#survivalForm').on('submit', function(e) {
+                e.preventDefault();
+                const durations = $('#durations').val().split(',').map(x => parseFloat(x.trim()));
+                const events = $('#events').val().split(',').map(x => parseInt(x.trim()));
+                const groups = $('#groups').val() ? $('#groups').val().split(',').map(x => parseInt(x.trim())) : null;
+                const groupNames = $('#groupNames').val() ? $('#groupNames').val().split(',').map(x => x.trim()) : null;
+
+                $.ajax({
+                    url: '/api/v1/analyze/survival',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        method: 'survival_analysis',
+                        data: {
+                            durations: durations,
+                            events: events,
+                            groups: groups,
+                            group_names: groupNames
+                        }
+                    }),
+                    success: function(response) {
+                        $('#survivalError').hide();
+                        $('#survivalSuccess').show().text('分析完成！');
+                        
+                        // 格式化數據結果
+                        const formattedResult = {
+                            "樣本資訊": response.result.sample_info,
+                            "結論": response.result.conclusion
+                        };
+                        
+                        if (response.result.median_survival) {
+                            formattedResult["中位存活時間"] = response.result.median_survival.toFixed(4);
+                        }
+                        
+                        if (response.result.log_rank_test) {
+                            formattedResult["Log-rank 檢定"] = {
+                                "統計量": response.result.log_rank_test.statistic.toFixed(4),
+                                "p 值": response.result.log_rank_test.p_value.toFixed(4)
+                            };
+                        }
+                        
+                        $('#survivalDataTab pre').html(JSON.stringify(formattedResult, null, 2));
+                        $('#survivalPlot').attr('src', 'data:image/png;base64,' + response.result.survival_plot);
+                        $('#cumulativePlot').attr('src', 'data:image/png;base64,' + response.result.cumulative_plot);
+                        $('.result-tabs').show();
+                    },
+                    error: function(xhr) {
+                        $('#survivalSuccess').hide();
+                        $('#survivalError').show().text('錯誤：' + xhr.responseJSON.detail);
+                        $('#survivalDataTab pre').html('');
+                        $('#survivalPlot').attr('src', '');
+                        $('#cumulativePlot').attr('src', '');
+                        $('.result-tabs').hide();
+                    }
+                });
+            });
+
+            // 配對樣本 t 檢定表單提交
+            $('#pairedTTestForm').on('submit', function(e) {
+                e.preventDefault();
+                const preTestData = $('#preTest').val().split(',').map(x => parseFloat(x.trim()));
+                const postTestData = $('#postTest').val().split(',').map(x => parseFloat(x.trim()));
+
+                $.ajax({
+                    url: '/api/v1/analyze/paired-t-test',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        method: 'paired_t_test',
+                        data: {
+                            pre_test: preTestData,
+                            post_test: postTestData
+                        }
+                    }),
+                    success: function(response) {
+                        $('#pairedTTestError').hide();
+                        $('#pairedTTestSuccess').show().text('分析完成！');
+                        
+                        // 格式化數據結果
+                        const formattedResult = {
+                            "t 統計量": response.result.t_statistic.toFixed(4),
+                            "p 值": response.result.p_value.toFixed(4),
+                            "結論": response.result.conclusion
+                        };
+                        
+                        $('#pairedTTestDataTab pre').html(JSON.stringify(formattedResult, null, 2));
+                        $('#pairedTTestBoxPlot').attr('src', 'data:image/png;base64,' + response.result.box_plot);
+                        $('#pairedTTestDiffPlot').attr('src', 'data:image/png;base64,' + response.result.diff_plot);
+                        $('.result-tabs').show();
+                    },
+                    error: function(xhr) {
+                        $('#pairedTTestSuccess').hide();
+                        $('#pairedTTestError').show().text('錯誤：' + xhr.responseJSON.detail);
+                        $('#pairedTTestDataTab pre').html('');
+                        $('#pairedTTestBoxPlot').attr('src', '');
+                        $('#pairedTTestDiffPlot').attr('src', '');
+                        $('.result-tabs').hide();
+                    }
+                });
+            });
+
+            // 卡方檢定表單提交
+            $('#chiSquareForm').on('submit', function(e) {
+                e.preventDefault();
+                const observed = $('#observed').val().split(',').map(x => parseInt(x.trim()));
+                const expected = $('#expected').val().split(',').map(x => parseInt(x.trim()));
+
+                $.ajax({
+                    url: '/api/v1/analyze/chi-square',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        method: 'chi_square_test',
+                        data: {
+                            observed: observed,
+                            expected: expected
+                        }
+                    }),
+                    success: function(response) {
+                        $('#chiSquareError').hide();
+                        $('#chiSquareSuccess').show().text('分析完成！');
+                        
+                        // 格式化數據結果
+                        const formattedResult = {
+                            "卡方統計量": response.result.chi_square_statistic.toFixed(4),
+                            "p 值": response.result.p_value.toFixed(4),
+                            "自由度": response.result.degrees_of_freedom,
+                            "結論": response.result.conclusion
+                        };
+                        
+                        $('#chiSquareDataTab pre').html(JSON.stringify(formattedResult, null, 2));
+                        $('#chiSquarePlot').attr('src', 'data:image/png;base64,' + response.result.plot_base64);
+                        $('#chiSquareContribPlot').attr('src', 'data:image/png;base64,' + response.result.contribution_plot);
+                        $('.result-tabs').show();
+                    },
+                    error: function(xhr) {
+                        $('#chiSquareSuccess').hide();
+                        $('#chiSquareError').show().text('錯誤：' + xhr.responseJSON.detail);
+                        $('#chiSquareDataTab pre').html('');
+                        $('#chiSquarePlot').attr('src', '');
+                        $('#chiSquareContribPlot').attr('src', '');
+                        $('.result-tabs').hide();
+                    }
+                });
+            });
+
+            // 相關性分析表單提交
+            $('#correlationForm').on('submit', function(e) {
+                e.preventDefault();
+                const xData = $('#correlationX').val().split(',').map(x => parseFloat(x.trim()));
+                const yData = $('#correlationY').val().split(',').map(x => parseFloat(x.trim()));
+
+                $.ajax({
+                    url: '/api/v1/analyze/correlation_analysis',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        method: 'correlation_analysis',
+                        data: {
+                            x: xData,
+                            y: yData
+                        }
+                    }),
+                    success: function(response) {
+                        $('#correlationError').hide();
+                        $('#correlationSuccess').show().text('分析完成！');
+                        
+                        // 格式化數據結果
+                        const formattedResult = {
+                            "相關係數": response.result.correlation_coefficient.toFixed(4),
+                            "p 值": response.result.p_value.toFixed(4),
+                            "結論": response.result.conclusion
+                        };
+                        
+                        $('#correlationDataTab pre').html(JSON.stringify(formattedResult, null, 2));
+                        $('#correlationPlot').attr('src', 'data:image/png;base64,' + response.result.plot_base64);
+                        $('.result-tabs').show();
+                    },
+                    error: function(xhr) {
+                        $('#correlationSuccess').hide();
+                        $('#correlationError').show().text('錯誤：' + xhr.responseJSON.detail);
+                        $('#correlationDataTab pre').html('');
+                        $('#correlationPlot').attr('src', '');
+                        $('.result-tabs').hide();
+                    }
+                });
+            });
+
+            // 線性回歸表單提交
+            $('#regressionForm').on('submit', function(e) {
+                e.preventDefault();
+                const xData = $('#regressionX').val().split(',').map(x => parseFloat(x.trim()));
+                const yData = $('#regressionY').val().split(',').map(x => parseFloat(x.trim()));
+                const predictX = $('#predictX').val() ? parseFloat($('#predictX').val().trim()) : null;
+
+                $.ajax({
+                    url: '/api/v1/analyze/regression',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        method: 'linear_regression',
+                        data: {
+                            x: xData,
+                            y: yData,
+                            predict_x: predictX
+                        }
+                    }),
+                    success: function(response) {
+                        $('#regressionError').hide();
+                        $('#regressionSuccess').show().text('分析完成！');
+                        
+                        // 格式化數據結果
+                        const formattedResult = {
+                            "截距": response.result.coefficients[0].toFixed(4),
+                            "斜率": response.result.coefficients[1].toFixed(4),
+                            "R²": response.result.r_squared.toFixed(4),
+                            "標準誤差": response.result.standard_error.toFixed(4),
+                            "p 值": response.result.p_value.toFixed(4),
+                            "回歸方程": response.result.equation
+                        };
+                        
+                        if (response.result.predicted_y !== null) {
+                            formattedResult["預測值"] = response.result.predicted_y.toFixed(4);
+                        }
+                        
+                        $('#regressionDataTab pre').html(JSON.stringify(formattedResult, null, 2));
+                        $('#regressionPlot').attr('src', 'data:image/png;base64,' + response.result.plot_base64);
+                        $('#residualPlot').attr('src', 'data:image/png;base64,' + response.result.residual_plot);
+                        $('.result-tabs').show();
+                    },
+                    error: function(xhr) {
+                        $('#regressionSuccess').hide();
+                        $('#regressionError').show().text('錯誤：' + xhr.responseJSON.detail);
+                        $('#regressionDataTab pre').html('');
+                        $('#regressionPlot').attr('src', '');
+                        $('#residualPlot').attr('src', '');
+                        $('.result-tabs').hide();
+                    }
+                });
+            });
+
+            // 多元迴歸分析相關功能
+            document.getElementById('addFeature').addEventListener('click', function() {
+                const container = document.getElementById('featuresContainer');
+                const featureGroup = document.createElement('div');
+                featureGroup.className = 'feature-group mb-2';
+                featureGroup.innerHTML = `
+                    <div class="input-group">
+                        <input type="text" class="form-control feature-name" placeholder="特徵名稱">
+                        <input type="text" class="form-control feature-data" placeholder="數據 (用逗號分隔)">
+                        <button type="button" class="btn btn-outline-danger remove-feature">
+                            ×
+                        </button>
+                    </div>
+                `;
+                container.appendChild(featureGroup);
+            });
+
+            document.getElementById('featuresContainer').addEventListener('click', function(e) {
+                if (e.target.closest('.remove-feature')) {
+                    const featureGroup = e.target.closest('.feature-group');
+                    if (document.querySelectorAll('.feature-group').length > 1) {
+                        featureGroup.remove();
+                    }
+                }
+            });
+
+            // 多元迴歸分析表單提交
+            document.getElementById('multipleRegressionForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                showLoading();
+
+                try {
+                    // 收集特徵數據
+                    const features = [];
+                    const featureNames = [];
+                    document.querySelectorAll('.feature-group').forEach(group => {
+                        const nameInput = group.querySelector('.feature-name');
+                        const dataInput = group.querySelector('.feature-data');
+                        if (dataInput.value.trim()) {
+                            const data = dataInput.value.split(',').map(x => parseFloat(x.trim()));
+                            features.push(data);
+                            featureNames.push(nameInput.value.trim() || `特徵${features.length}`);
+                        }
+                    });
+
+                    // 收集因變量數據
+                    const y = document.getElementById('multipleRegressionY').value
+                        .split(',')
+                        .map(x => parseFloat(x.trim()));
+
+                    // 收集預測值數據
+                    const predictXInput = document.getElementById('multipleRegressionPredictX').value.trim();
+                    const predictX = predictXInput ? 
+                        predictXInput.split(',').map(x => parseFloat(x.trim())) : 
+                        null;
+
+                    // 檢查預測值數量是否與特徵數量相同
+                    if (predictX && predictX.length !== features.length) {
+                        document.getElementById('multipleRegressionError').textContent = 
+                            '錯誤：預測數據的特徵數量必須與訓練數據相同';
+                        document.getElementById('multipleRegressionSuccess').textContent = '';
+                        hideLoading();
+                        return;
+                    }
+
+                    const response = await fetch('/api/v1/analyze/multiple-regression', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            method: 'multiple_regression',
+                            data: {
+                                X: features,
+                                y: y,
+                                feature_names: featureNames,
+                                predict_X: predictX
+                            }
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        // 顯示結果
+                        document.getElementById('multipleRegressionData').textContent = 
+                            JSON.stringify(result.result, null, 2);
+                        
+                        // 顯示圖表
+                        if (result.result.plots) {
+                            document.getElementById('multipleRegressionResidualPlot').src = 
+                                'data:image/png;base64,' + result.result.plots.residual_plot;
+                            document.getElementById('multipleRegressionPredictionPlot').src = 
+                                'data:image/png;base64,' + result.result.plots.prediction_plot;
+                            document.getElementById('multipleRegressionCoefficientPlot').src = 
+                                'data:image/png;base64,' + result.result.plots.coefficient_plot;
+                        }
+
+                        document.getElementById('multipleRegressionSuccess').textContent = 
+                            result.result.conclusion;
+                        document.getElementById('multipleRegressionError').textContent = '';
+                    } else {
+                        document.getElementById('multipleRegressionError').textContent = 
+                            result.message || '分析過程中發生錯誤';
+                        document.getElementById('multipleRegressionSuccess').textContent = '';
+                    }
+                } catch (error) {
+                    document.getElementById('multipleRegressionError').textContent = 
+                        '請求發生錯誤：' + error.message;
+                    document.getElementById('multipleRegressionSuccess').textContent = '';
+                }
+
+                hideLoading();
+            });
+
+            // 載入多元迴歸分析範例數據
+            document.querySelector('#multipleRegression .sample-data-btn')
+                .addEventListener('click', function() {
+                    // 清除現有特徵
+                    const container = document.getElementById('featuresContainer');
+                    container.innerHTML = '';
+
+                    // 添加範例特徵
+                    const sampleFeatures = [
+                        { name: '年齡', data: '25, 30, 35, 40, 45, 50, 55, 60' },
+                        { name: '工作年資', data: '1, 5, 8, 12, 15, 20, 25, 30' },
+                        { name: '教育年數', data: '12, 14, 16, 16, 18, 18, 16, 14' }
+                    ];
+
+                    sampleFeatures.forEach(feature => {
+                        const featureGroup = document.createElement('div');
+                        featureGroup.className = 'feature-group mb-2';
+                        featureGroup.innerHTML = `
+                            <div class="input-group">
+                                <input type="text" class="form-control feature-name" 
+                                       placeholder="特徵名稱" value="${feature.name}">
+                                <input type="text" class="form-control feature-data" 
+                                       placeholder="數據 (用逗號分隔)" value="${feature.data}">
+                                <button type="button" class="btn btn-outline-danger remove-feature">
+                                    ×
+                                </button>
+                            </div>
+                        `;
+                        container.appendChild(featureGroup);
+                    });
+
+                    // 設置範例因變量數據
+                    document.getElementById('multipleRegressionY').value = 
+                        '30000, 45000, 55000, 60000, 70000, 80000, 85000, 90000';
+
+                    // 設置範例預測值
+                    document.getElementById('multipleRegressionPredictX').value = 
+                        '35, 10, 16';
+                });
+
+            // 邏輯迴歸分析相關功能
+            document.getElementById('addLogisticFeature').addEventListener('click', function() {
+                const container = document.getElementById('logisticFeaturesContainer');
+                const featureGroup = document.createElement('div');
+                featureGroup.className = 'feature-group mb-2';
+                featureGroup.innerHTML = `
+                    <div class="input-group">
+                        <input type="text" class="form-control feature-name" placeholder="特徵名稱">
+                        <input type="text" class="form-control feature-data" placeholder="數據 (用逗號分隔)">
+                        <button type="button" class="btn btn-outline-danger remove-feature">
+                            ×
+                        </button>
+                    </div>
+                `;
+                container.appendChild(featureGroup);
+            });
+
+            document.getElementById('logisticFeaturesContainer').addEventListener('click', function(e) {
+                if (e.target.closest('.remove-feature')) {
+                    const featureGroup = e.target.closest('.feature-group');
+                    if (document.querySelectorAll('#logisticFeaturesContainer .feature-group').length > 1) {
+                        featureGroup.remove();
+                    }
+                }
+            });
+
+            // 邏輯迴歸分析表單提交
+            document.getElementById('logisticRegressionForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                showLoading();
+
+                try {
+                    // 收集特徵數據
+                    const features = [];
+                    const featureNames = [];
+                    document.querySelectorAll('#logisticFeaturesContainer .feature-group').forEach(group => {
+                        const nameInput = group.querySelector('.feature-name');
+                        const dataInput = group.querySelector('.feature-data');
+                        if (dataInput.value.trim()) {
+                            const data = dataInput.value.split(',').map(x => parseFloat(x.trim()));
+                            features.push(data);
+                            featureNames.push(nameInput.value.trim() || `特徵${features.length}`);
+                        }
+                    });
+
+                    // 收集因變量數據
+                    const y = document.getElementById('logisticRegressionY').value
+                        .split(',')
+                        .map(x => parseInt(x.trim()));
+
+                    // 收集預測值數據
+                    const predictXInput = document.getElementById('logisticRegressionPredictX').value.trim();
+                    const predictX = predictXInput ? 
+                        predictXInput.split(',').map(x => parseFloat(x.trim())) : 
+                        null;
+
+                    const response = await fetch('/api/v1/analyze/logistic-regression', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            method: 'logistic_regression',
+                            data: {
+                                X: features,
+                                y: y,
+                                feature_names: featureNames,
+                                predict_X: predictX
+                            }
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        // 顯示結果
+                        document.getElementById('logisticRegressionData').textContent = 
+                            JSON.stringify(result.result, null, 2);
+                        
+                        // 顯示圖表
+                        if (result.result.plots) {
+                            document.getElementById('logisticRegressionROCPlot').src = 
+                                'data:image/png;base64,' + result.result.plots.roc_plot;
+                            document.getElementById('logisticRegressionProbabilityPlot').src = 
+                                'data:image/png;base64,' + result.result.plots.probability_plot;
+                            document.getElementById('logisticRegressionCoefficientPlot').src = 
+                                'data:image/png;base64,' + result.result.plots.coefficient_plot;
+                        }
+
+                        document.getElementById('logisticRegressionSuccess').textContent = 
+                            result.result.conclusion;
+                        document.getElementById('logisticRegressionError').textContent = '';
+                        $('.result-tabs').show();
+                    } else {
+                        document.getElementById('logisticRegressionError').textContent = 
+                            result.message || '分析過程中發生錯誤';
+                        document.getElementById('logisticRegressionSuccess').textContent = '';
+                        $('.result-tabs').hide();
+                    }
+                } catch (error) {
+                    document.getElementById('logisticRegressionError').textContent = 
+                        '請求發生錯誤：' + error.message;
+                    document.getElementById('logisticRegressionSuccess').textContent = '';
+                    $('.result-tabs').hide();
+                }
+
+                hideLoading();
+            });
+
+            // 載入邏輯迴歸分析範例數據
+            document.querySelector('#logisticRegression .sample-data-btn')
+                .addEventListener('click', function() {
+                    // 清除現有特徵
+                    const container = document.getElementById('logisticFeaturesContainer');
+                    container.innerHTML = '';
+
+                    // 添加範例特徵
+                    const sampleFeatures = [
+                        { name: '年齡', data: '25, 35, 45, 55, 65, 30, 40, 50' },
+                        { name: '收入', data: '30000, 45000, 55000, 65000, 75000, 40000, 50000, 60000' },
+                        { name: '教育年數', data: '12, 14, 16, 18, 16, 14, 16, 18' }
+                    ];
+
+                    sampleFeatures.forEach(feature => {
+                        const featureGroup = document.createElement('div');
+                        featureGroup.className = 'feature-group mb-2';
+                        featureGroup.innerHTML = `
+                            <div class="input-group">
+                                <input type="text" class="form-control feature-name" 
+                                       placeholder="特徵名稱" value="${feature.name}">
+                                <input type="text" class="form-control feature-data" 
+                                       placeholder="數據 (用逗號分隔)" value="${feature.data}">
+                                <button type="button" class="btn btn-outline-danger remove-feature">
+                                    ×
+                                </button>
+                            </div>
+                        `;
+                        container.appendChild(featureGroup);
+                    });
+
+                    // 設置範例因變量數據
+                    document.getElementById('logisticRegressionY').value = 
+                        '0, 1, 1, 0, 1, 0, 1, 0';
+
+                    // 設置範例預測值
+                    document.getElementById('logisticRegressionPredictX').value = 
+                        '40, 50000, 16';
+                });
+
+            // 主成分分析相關功能
+            document.getElementById('addPCAFeature').addEventListener('click', function() {
+                const container = document.getElementById('pcaFeaturesContainer');
+                const featureGroup = document.createElement('div');
+                featureGroup.className = 'feature-group mb-2';
+                featureGroup.innerHTML = `
+                    <div class="input-group">
+                        <input type="text" class="form-control feature-name" placeholder="特徵名稱">
+                        <input type="text" class="form-control feature-data" placeholder="數據 (用逗號分隔)">
+                        <button type="button" class="btn btn-outline-danger remove-feature">
+                            ×
+                        </button>
+                    </div>
+                `;
+                container.appendChild(featureGroup);
+            });
+
+            document.getElementById('pcaFeaturesContainer').addEventListener('click', function(e) {
+                if (e.target.closest('.remove-feature')) {
+                    const featureGroup = e.target.closest('.feature-group');
+                    if (document.querySelectorAll('#pcaFeaturesContainer .feature-group').length > 1) {
+                        featureGroup.remove();
+                    }
+                }
+            });
+
+            // 主成分分析表單提交
+            document.getElementById('pcaForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                showLoading();
+
+                try {
+                    // 收集特徵數據
+                    const features = [];
+                    const featureNames = [];
+                    document.querySelectorAll('#pcaFeaturesContainer .feature-group').forEach(group => {
+                        const nameInput = group.querySelector('.feature-name');
+                        const dataInput = group.querySelector('.feature-data');
+                        if (dataInput.value.trim()) {
+                            const data = dataInput.value.split(',').map(x => parseFloat(x.trim()));
+                            features.push(data);
+                            featureNames.push(nameInput.value.trim() || `特徵${features.length}`);
+                        }
+                    });
+
+                    // 獲取主成分數量
+                    const n_components = document.getElementById('pcaComponents').value
+                        ? parseInt(document.getElementById('pcaComponents').value)
+                        : null;
+
+                    const response = await fetch('/api/v1/analyze/pca', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            method: 'pca',
+                            data: {
+                                X: features,
+                                feature_names: featureNames,
+                                n_components: n_components
+                            }
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        // 顯示結果
+                        document.getElementById('pcaData').textContent = 
+                            JSON.stringify(result.result, null, 2);
+                        
+                        // 顯示圖表
+                        if (result.result.plots) {
+                            document.getElementById('pcaScreePlot').src = 
+                                'data:image/png;base64,' + result.result.plots.scree_plot;
+                            document.getElementById('pcaCumulativePlot').src = 
+                                'data:image/png;base64,' + result.result.plots.cumulative_plot;
+                            
+                            if (result.result.plots.scatter_plot) {
+                                document.getElementById('pcaScatterPlot').src = 
+                                    'data:image/png;base64,' + result.result.plots.scatter_plot;
+                            }
+                            
+                            if (result.result.plots.loading_plot) {
+                                document.getElementById('pcaLoadingPlot').src = 
+                                    'data:image/png;base64,' + result.result.plots.loading_plot;
+                            }
+                            
+                            document.getElementById('pcaHeatmapPlot').src = 
+                                'data:image/png;base64,' + result.result.plots.heatmap_plot;
+                        }
+
+                        document.getElementById('pcaSuccess').textContent = 
+                            result.result.conclusion;
+                        document.getElementById('pcaError').textContent = '';
+                        $('.result-tabs').show();
+                    } else {
+                        document.getElementById('pcaError').textContent = 
+                            result.message || '分析過程中發生錯誤';
+                        document.getElementById('pcaSuccess').textContent = '';
+                        $('.result-tabs').hide();
+                    }
+                } catch (error) {
+                    document.getElementById('pcaError').textContent = 
+                        '請求發生錯誤：' + error.message;
+                    document.getElementById('pcaSuccess').textContent = '';
+                    $('.result-tabs').hide();
+                }
+
+                hideLoading();
+            });
+
+            // 載入主成分分析範例數據
+            document.querySelector('#pca .sample-data-btn')
+                .addEventListener('click', function() {
+                    // 清除現有特徵
+                    const container = document.getElementById('pcaFeaturesContainer');
+                    container.innerHTML = '';
+
+                    // 添加範例特徵
+                    const sampleFeatures = [
+                        { name: '身高', data: '170, 175, 160, 180, 165, 172, 168, 178' },
+                        { name: '體重', data: '65, 70, 55, 80, 58, 68, 62, 75' },
+                        { name: '年齡', data: '25, 30, 28, 35, 27, 32, 29, 33' },
+                        { name: '收入', data: '30000, 45000, 35000, 60000, 32000, 48000, 40000, 55000' }
+                    ];
+
+                    sampleFeatures.forEach(feature => {
+                        const featureGroup = document.createElement('div');
+                        featureGroup.className = 'feature-group mb-2';
+                        featureGroup.innerHTML = `
+                            <div class="input-group">
+                                <input type="text" class="form-control feature-name" 
+                                       placeholder="特徵名稱" value="${feature.name}">
+                                <input type="text" class="form-control feature-data" 
+                                       placeholder="數據 (用逗號分隔)" value="${feature.data}">
+                                <button type="button" class="btn btn-outline-danger remove-feature">
+                                    ×
+                                </button>
+                            </div>
+                        `;
+                        container.appendChild(featureGroup);
+                    });
+
+                    // 設置主成分數量
+                    document.getElementById('pcaComponents').value = '2';
+                });
+
+            // 因子分析相關功能
+            document.getElementById('addFactorFeature').addEventListener('click', function() {
+                const container = document.getElementById('factorFeaturesContainer');
+                const featureGroup = document.createElement('div');
+                featureGroup.className = 'feature-group mb-2';
+                featureGroup.innerHTML = `
+                    <div class="input-group">
+                        <input type="text" class="form-control feature-name" placeholder="特徵名稱">
+                        <input type="text" class="form-control feature-data" placeholder="數據 (用逗號分隔)">
+                        <button type="button" class="btn btn-outline-danger remove-feature">
+                            ×
+                        </button>
+                    </div>
+                `;
+                container.appendChild(featureGroup);
+            });
+
+            document.getElementById('factorFeaturesContainer').addEventListener('click', function(e) {
+                if (e.target.closest('.remove-feature')) {
+                    const featureGroup = e.target.closest('.feature-group');
+                    if (document.querySelectorAll('#factorFeaturesContainer .feature-group').length > 1) {
+                        featureGroup.remove();
+                    }
+                }
+            });
+
+            // 因子分析表單提交
+            document.getElementById('factorForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                showLoading();
+
+                try {
+                    // 收集特徵數據
+                    const features = [];
+                    const featureNames = [];
+                    document.querySelectorAll('#factorFeaturesContainer .feature-group').forEach(group => {
+                        const nameInput = group.querySelector('.feature-name');
+                        const dataInput = group.querySelector('.feature-data');
+                        if (dataInput.value.trim()) {
+                            const data = dataInput.value.split(',').map(x => parseFloat(x.trim()));
+                            features.push(data);
+                            featureNames.push(nameInput.value.trim() || `特徵${features.length}`);
+                        }
+                    });
+
+                    // 獲取因子數量和旋轉方法
+                    const n_factors = document.getElementById('factorCount').value
+                        ? parseInt(document.getElementById('factorCount').value)
+                        : null;
+                    const rotation = document.getElementById('rotationMethod').value;
+
+                    const response = await fetch('/api/v1/analyze/factor-analysis', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            method: 'factor_analysis',
+                            data: {
+                                X: features,
+                                feature_names: featureNames,
+                                n_factors: n_factors,
+                                rotation: rotation
+                            }
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        // 顯示結果
+                        document.getElementById('factorData').textContent = 
+                            JSON.stringify(result.result, null, 2);
+                        
+                        // 顯示圖表
+                        if (result.result.plots) {
+                            document.getElementById('factorScreePlot').src = 
+                                'data:image/png;base64,' + result.result.plots.scree_plot;
+                            document.getElementById('factorLoadingPlot').src = 
+                                'data:image/png;base64,' + result.result.plots.loading_plot;
+                            
+                            if (result.result.plots.loading_scatter) {
+                                document.getElementById('factorLoadingScatter').src = 
+                                    'data:image/png;base64,' + result.result.plots.loading_scatter;
+                            }
+                        }
+
+                        document.getElementById('factorSuccess').textContent = 
+                            result.result.conclusion;
+                        document.getElementById('factorError').textContent = '';
+                        $('.result-tabs').show();
+                    } else {
+                        document.getElementById('factorError').textContent = 
+                            result.message || '分析過程中發生錯誤';
+                        document.getElementById('factorSuccess').textContent = '';
+                        $('.result-tabs').hide();
+                    }
+                } catch (error) {
+                    document.getElementById('factorError').textContent = 
+                        '請求發生錯誤：' + error.message;
+                    document.getElementById('factorSuccess').textContent = '';
+                    $('.result-tabs').hide();
+                }
+
+                hideLoading();
+            });
+
+            // 載入因子分析範例數據
+            document.querySelector('#factor .sample-data-btn')
+                .addEventListener('click', function() {
+                    // 清除現有特徵
+                    const container = document.getElementById('factorFeaturesContainer');
+                    container.innerHTML = '';
+
+                    // 添加範例特徵
+                    const sampleFeatures = [
+                        { name: '智力測驗', data: '85, 78, 92, 88, 76, 89, 94, 82, 85, 90' },
+                        { name: '學習動機', data: '4.2, 3.8, 4.5, 4.1, 3.5, 4.3, 4.7, 3.9, 4.0, 4.4' },
+                        { name: '學習態度', data: '4.0, 3.5, 4.3, 3.9, 3.3, 4.1, 4.5, 3.7, 3.8, 4.2' },
+                        { name: '學習成績', data: '82, 75, 88, 84, 72, 86, 90, 78, 80, 85' }
+                    ];
+
+                    sampleFeatures.forEach(feature => {
+                        const featureGroup = document.createElement('div');
+                        featureGroup.className = 'feature-group mb-2';
+                        featureGroup.innerHTML = `
+                            <div class="input-group">
+                                <input type="text" class="form-control feature-name" 
+                                       placeholder="特徵名稱" value="${feature.name}">
+                                <input type="text" class="form-control feature-data" 
+                                       placeholder="數據 (用逗號分隔)" value="${feature.data}">
+                                <button type="button" class="btn btn-outline-danger remove-feature">
+                                    ×
+                                </button>
+                            </div>
+                        `;
+                        container.appendChild(featureGroup);
+                    });
+
+                    // 設置因子數量和旋轉方法
+                    document.getElementById('factorCount').value = '2';
+                    document.getElementById('rotationMethod').value = 'varimax';
+                });
+        });
+    </script>
+</body>
+</html> 
