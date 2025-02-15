@@ -7,3 +7,5 @@ venv/
 .vscode/
 *.log
 .DS_Store
+*cmproj
+stat_record.cmproj
