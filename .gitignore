@@ -9,3 +9,4 @@ venv/
 .DS_Store
 *cmproj
 stat_record.cmproj
+*.mp4
