@@ -1,10 +1,10 @@
 from fastapi import APIRouter, HTTPException
-from ..models.request import SurvivalAnalysisRequest
-from ..models.response import SurvivalAnalysisResponse, ErrorResponse
-from ..services.survival import perform_survival_analysis
-from ..utils.errors import StatisticalError, ValidationError
+from ...models.request import SurvivalAnalysisRequest
+from ...models.response import SurvivalAnalysisResponse, ErrorResponse
+from ...services.survival import perform_survival_analysis
+from ...utils.errors import StatisticalError, ValidationError
 
-router = APIRouter(prefix="/api/v1/analyze", tags=["存活分析"])
+router = APIRouter(tags=["存活分析"])
 
 
 @router.post("/survival", response_model=SurvivalAnalysisResponse)

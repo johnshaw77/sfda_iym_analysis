@@ -1,11 +1,11 @@
 from fastapi import APIRouter, HTTPException
-from ..models.request import PCARequest, FactorAnalysisRequest
-from ..models.response import PCAResponse, FactorAnalysisResponse, ErrorResponse
-from ..services.pca import perform_pca
-from ..services.factor_analysis import perform_factor_analysis
-from ..utils.errors import StatisticalError, ValidationError
+from ...models.request import PCARequest, FactorAnalysisRequest
+from ...models.response import PCAResponse, FactorAnalysisResponse, ErrorResponse
+from ...services.pca import perform_pca
+from ...services.factor_analysis import perform_factor_analysis
+from ...utils.errors import StatisticalError, ValidationError
 
-router = APIRouter(prefix="/api/v1/analyze", tags=["降維分析"])
+router = APIRouter(tags=["降維分析"])
 
 
 @router.post("/pca", response_model=PCAResponse)

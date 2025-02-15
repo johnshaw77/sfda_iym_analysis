@@ -1,16 +1,16 @@
 from fastapi import APIRouter, HTTPException
-from ..models.request import (LinearRegressionRequest,
+from ...models.request import (LinearRegressionRequest,
                               MultipleRegressionRequest,
                               LogisticRegressionRequest)
-from ..models.response import (LinearRegressionResponse,
+from ...models.response import (LinearRegressionResponse,
                                MultipleRegressionResponse,
                                LogisticRegressionResponse, ErrorResponse)
-from ..services.linear_regression import perform_linear_regression
-from ..services.multiple_regression import perform_multiple_regression
-from ..services.logistic_regression import perform_logistic_regression
-from ..utils.errors import StatisticalError, ValidationError
+from ...services.linear_regression import perform_linear_regression
+from ...services.multiple_regression import perform_multiple_regression
+from ...services.logistic_regression import perform_logistic_regression
+from ...utils.errors import StatisticalError, ValidationError
 
-router = APIRouter(prefix="/api/v1/analyze", tags=["回歸分析"])
+router = APIRouter(tags=["回歸分析"])
 
 
 @router.post("/linear-regression", response_model=LinearRegressionResponse)

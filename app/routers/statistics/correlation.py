@@ -1,10 +1,10 @@
 from fastapi import APIRouter, HTTPException
-from ..models.request import CorrelationAnalysisRequest
-from ..models.response import CorrelationAnalysisResponse, ErrorResponse
-from ..services.correlation import perform_correlation_analysis
-from ..utils.errors import StatisticalError, ValidationError
+from ...models.request import CorrelationAnalysisRequest
+from ...models.response import CorrelationAnalysisResponse, ErrorResponse
+from ...services.correlation import perform_correlation_analysis
+from ...utils.errors import StatisticalError, ValidationError
 
-router = APIRouter(prefix="/api/v1/analyze", tags=["相關性分析"])
+router = APIRouter(tags=["相關性分析"])
 
 
 @router.post("/correlation", response_model=CorrelationAnalysisResponse)

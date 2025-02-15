@@ -5,9 +5,16 @@ from fastapi.staticfiles import StaticFiles
 from .config import settings
 from .utils.errors import StatisticalError
 from .models.method_info import get_available_methods, StatisticalMethodInfo
-from .routers import basic_stats, regression, correlation, dimension_reduction, survival
+from .routers.statistics import (
+    basic_stats_router,
+    regression_router,
+    correlation_router,
+    dimension_reduction_router,
+    survival_router
+)
 import time
-from typing import List
+from typing import List, Dict
+from fastapi.routing import APIRoute
 
 app = FastAPI(title=settings.PROJECT_NAME,
               openapi_url=f"{settings.API_V1_STR}/openapi.json")
@@ -88,12 +95,42 @@ async def list_statistical_methods():
     return get_available_methods()
 
 
-# 引入所有路由
-app.include_router(basic_stats.router)
-app.include_router(regression.router)
-app.include_router(correlation.router)
-app.include_router(dimension_reduction.router)
-app.include_router(survival.router)
+# 註冊路由
+app.include_router(basic_stats_router, prefix="/api/v1/statistics", tags=["基本統計"])
+app.include_router(regression_router, prefix="/api/v1/statistics", tags=["回歸分析"])
+app.include_router(correlation_router, prefix="/api/v1/statistics", tags=["相關分析"])
+app.include_router(dimension_reduction_router, prefix="/api/v1/statistics", tags=["降維分析"])
+app.include_router(survival_router, prefix="/api/v1/statistics", tags=["存活分析"])
+
+@app.get("/api/v1/statistics/routes", tags=["API資訊"])
+async def get_statistics_routes() -> Dict[str, List[Dict[str, str]]]:
+    """
+    獲取所有統計相關的API路徑
+    
+    Returns:
+        Dict[str, List[Dict[str, str]]]: 按標籤分組的API路徑列表
+    """
+    statistics_routes = {}
+    
+    # 獲取所有路由
+    routes = app.routes
+    
+    # 過濾並組織統計相關的路由
+    for route in routes:
+        if isinstance(route, APIRoute) and route.tags:  # 確保路由有標籤
+            for tag in route.tags:
+                if "分析" in tag or "統計" in tag:  # 篩選統計相關的路由
+                    if tag not in statistics_routes:
+                        statistics_routes[tag] = []
+                    
+                    statistics_routes[tag].append({
+                        "path": route.path,
+                        "method": route.methods.pop() if route.methods else "GET",  # 獲取HTTP方法
+                        "summary": route.summary or "無描述",
+                        "operation_id": route.name
+                    })
+    
+    return statistics_routes
 
 if __name__ == "__main__":
     import uvicorn

@@ -1,20 +1,20 @@
 from fastapi import APIRouter, HTTPException
-from ..models.request import (DescriptiveRequest, HypothesisTestRequest,
+from ...models.request import (DescriptiveRequest, HypothesisTestRequest,
                               TTestRequest, PairedTTestRequest,
                               ChiSquareTestRequest, AnovaRequest)
-from ..models.response import (DescriptiveResponse, HypothesisTestResponse,
+from ...models.response import (DescriptiveResponse, HypothesisTestResponse,
                                TTestResponse, PairedTTestResponse,
                                ChiSquareTestResponse, AnovaResponse,
                                ErrorResponse)
-from ..services.descriptive import perform_descriptive_analysis
-from ..services.hypothesis_test import perform_hypothesis_test
-from ..services.t_test import perform_t_test
-from ..services.paired_t_test import perform_paired_t_test
-from ..services.chi_square import perform_chi_square_test
-from ..services.anova import perform_anova
-from ..utils.errors import StatisticalError, ValidationError
+from ...services.descriptive import perform_descriptive_analysis
+from ...services.hypothesis_test import perform_hypothesis_test
+from ...services.t_test import perform_t_test
+from ...services.paired_t_test import perform_paired_t_test
+from ...services.chi_square import perform_chi_square_test
+from ...services.anova import perform_anova
+from ...utils.errors import StatisticalError, ValidationError
 
-router = APIRouter(prefix="/api/v1/analyze", tags=["基礎統計分析"])
+router = APIRouter(tags=["基礎統計分析"])
 
 
 @router.post("/descriptive", response_model=DescriptiveResponse)

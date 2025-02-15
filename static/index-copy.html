@@ -296,7 +296,7 @@
                 const group2 = $('#group2').val().split(',').map(x => parseFloat(x.trim()));
 
                 $.ajax({
-                    url: '/api/v1/analyze/t-test',
+                    url: '/api/v1/statistics/t-test',
                     method: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify({
@@ -328,7 +328,7 @@
                 const hypothesisValue = parseFloat($('#hypothesisValue').val());
 
                 $.ajax({
-                    url: '/api/v1/analyze/hypothesis-test',
+                    url: '/api/v1/statistics/hypothesis-test',
                     method: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify({
@@ -363,7 +363,7 @@
                 const predictX = $('#predictX').val() ? parseFloat($('#predictX').val()) : null;
 
                 $.ajax({
-                    url: '/api/v1/analyze/linear-regression',
+                    url: '/api/v1/statistics/linear-regression',
                     method: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify({
@@ -398,7 +398,7 @@
                 const yValues = $('#correlationY').val().split(',').map(x => parseFloat(x.trim()));
 
                 $.ajax({
-                    url: '/api/v1/analyze/correlation',
+                    url: '/api/v1/statistics/correlation',
                     method: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify({
@@ -430,7 +430,7 @@
                 const expected = $('#expected').val().split(',').map(x => parseFloat(x.trim()));
 
                 $.ajax({
-                    url: '/api/v1/analyze/chi-square',
+                    url: '/api/v1/statistics/chi-square',
                     method: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify({
@@ -490,7 +490,7 @@
                 }
 
                 $.ajax({
-                    url: '/api/v1/analyze/anova',
+                    url: '/api/v1/statistics/anova',
                     method: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify({
@@ -528,7 +528,7 @@
                 const postTest = $('#postTest').val().split(',').map(x => parseFloat(x.trim()));
 
                 $.ajax({
-                    url: '/api/v1/analyze/paired-t-test',
+                    url: '/api/v1/statistics/paired-t-test',
                     method: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify({
@@ -561,7 +561,7 @@
                 const data = $('#descriptiveData').val().split(',').map(x => parseFloat(x.trim()));
 
                 $.ajax({
-                    url: '/api/v1/analyze/descriptive',
+                    url: '/api/v1/statistics/descriptive',
                     method: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify({
@@ -598,7 +598,7 @@
                 const groupNames = $('#groupNames').val() ? $('#groupNames').val().split(',').map(x => x.trim()) : null;
 
                 $.ajax({
-                    url: '/api/v1/analyze/survival',
+                    url: '/api/v1/statistics/survival',
                     method: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify({
